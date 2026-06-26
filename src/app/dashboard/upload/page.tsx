@@ -29,11 +29,11 @@ export default function UploadWizard() {
     setErrorMsg('');
     
     try {
-      const userId = localStorage.getItem('user_id');
-      if (!userId) throw new Error('Not logged in');
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw new Error('Not logged in');
 
       const { data, error } = await supabase.from('job_tickets').insert([{
-        user_id: userId,
+        user_id: user.id,
         course_id: course,
         assessment_type: assessmentType,
         status: 'processing',

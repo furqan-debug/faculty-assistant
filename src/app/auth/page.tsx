@@ -26,21 +26,27 @@ export default function AuthPage() {
 
     try {
       if (isLogin) {
-        const { data, error } = await supabase.from('users').select('*').eq('email', email).single();
-        if (error || !data) throw new Error('Invalid credentials');
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+        if (error || !data.user) throw new Error(error?.message || 'Invalid credentials');
         
-        localStorage.setItem('user_id', data.id);
         router.push('/dashboard');
       } else {
-        const { data, error } = await supabase.from('users').insert([{
-          full_name: name,
-          university: university,
-          email: email
-        }]).select().single();
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: name,
+              university: university
+            }
+          }
+        });
         
         if (error) throw new Error(error.message);
         
-        localStorage.setItem('user_id', data.id);
         router.push('/onboarding');
       }
     } catch (err: any) {

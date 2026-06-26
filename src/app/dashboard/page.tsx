@@ -16,8 +16,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchJobs = async () => {
-      const userId = localStorage.getItem('user_id');
-      if (!userId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
         router.push('/auth');
         return;
       }
@@ -25,7 +25,7 @@ export default function DashboardPage() {
       const { data, error } = await supabase
         .from('job_tickets')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (data) setRecentUploads(data);
@@ -54,7 +54,10 @@ export default function DashboardPage() {
             variant="ghost" 
             size="icon" 
             className="h-8 w-8 text-muted-foreground"
-            onClick={() => { localStorage.removeItem('user_id'); router.push('/auth'); }}
+            onClick={async () => { 
+              await supabase.auth.signOut(); 
+              router.push('/auth'); 
+            }}
           >
             <LogOut className="h-4 w-4" />
           </Button>

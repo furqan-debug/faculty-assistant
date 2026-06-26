@@ -21,11 +21,11 @@ export default function OnboardingPage() {
     setErrorMsg('');
     
     try {
-      const userId = localStorage.getItem('user_id');
-      if (!userId) throw new Error('No user logged in');
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw new Error('No user logged in');
 
       const { error } = await supabase.from('portal_credentials').insert([{
-        user_id: userId,
+        user_id: user.id,
         portal_username: username,
         portal_password_encrypted: btoa(password),
         last_verified_at: new Date().toISOString(),
