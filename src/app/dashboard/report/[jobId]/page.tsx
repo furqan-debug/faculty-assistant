@@ -1,21 +1,33 @@
 'use client';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, Download, Check, X } from 'lucide-react';
 import { useParams } from 'next/navigation';
+import { supabase } from '@/lib/supabase_client';
 
 export default function ReportPage() {
   const params = useParams();
+  const [job, setJob] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   
-  const report = {
-    course: 'CS-301',
-    assessment: 'Quiz 2',
-    section: 'Section B',
-    studentsProcessed: 42,
-    successfulUploads: 42,
-    failedUploads: 0,
-    processingTime: '2m 18s',
-    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  };
+  useEffect(() => {
+    const fetchJob = async () => {
+      const { data } = await supabase.from('job_tickets').select('*').eq('id', params.jobId).single();
+      if (data) setJob(data);
+      setLoading(false);
+    };
+    fetchJob();
+  }, [params.jobId]);
+
+  if (loading) {
+    return <div className="center-screen"><p>Loading report...</p></div>;
+  }
+
+  if (!job) {
+    return <div className="center-screen"><p>Report not found.</p></div>;
+  }
+
+  const studentsCount = job.extracted_data ? job.extracted_data.length : 0;
 
   return (
     <>
@@ -45,7 +57,7 @@ export default function ReportPage() {
             <CheckCircle2 size={24} style={{ color: 'var(--color-success)' }} />
             <h1 className="heading-1" style={{ margin: 0 }}>Submission Complete</h1>
           </div>
-          <p className="text-subtitle">Data for {report.assessment} has been successfully synced to the portal.</p>
+          <p className="text-subtitle">Data for {job.assessment_type} has been successfully synced to the portal.</p>
         </div>
 
         <div className="panel" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -53,11 +65,11 @@ export default function ReportPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
             <div>
               <p className="text-xs mb-1">Course</p>
-              <p style={{ fontWeight: 500 }}>{report.course} - {report.section}</p>
+              <p style={{ fontWeight: 500 }}>{job.course_id}</p>
             </div>
             <div>
               <p className="text-xs mb-1">Date</p>
-              <p style={{ fontWeight: 500 }}>{report.date}</p>
+              <p style={{ fontWeight: 500 }}>{new Date(job.created_at).toLocaleDateString()}</p>
             </div>
           </div>
 
@@ -66,23 +78,19 @@ export default function ReportPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div className="flex-between">
               <span className="text-sm text-secondary">Total Processed</span>
-              <span style={{ fontWeight: 500 }}>{report.studentsProcessed}</span>
+              <span style={{ fontWeight: 500 }}>{studentsCount}</span>
             </div>
             <div className="flex-between">
               <span className="text-sm text-secondary flex-center gap-2">
                 <Check size={14} className="text-success" /> Successful
               </span>
-              <span style={{ fontWeight: 500 }}>{report.successfulUploads}</span>
+              <span style={{ fontWeight: 500 }}>{studentsCount}</span>
             </div>
             <div className="flex-between">
               <span className="text-sm text-secondary flex-center gap-2">
                 <X size={14} className="text-danger" /> Failed
               </span>
-              <span style={{ fontWeight: 500 }}>{report.failedUploads}</span>
-            </div>
-            <div className="flex-between pt-2">
-              <span className="text-sm text-secondary">Duration</span>
-              <span style={{ fontWeight: 500 }}>{report.processingTime}</span>
+              <span style={{ fontWeight: 500 }}>0</span>
             </div>
           </div>
 

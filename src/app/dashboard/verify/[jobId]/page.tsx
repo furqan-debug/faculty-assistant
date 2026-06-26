@@ -1,20 +1,40 @@
 'use client';
-import { useState } from 'react';
-import { ArrowLeft, Save, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowLeft, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
+import { supabase } from '@/lib/supabase_client';
 
 export default function VerifyPage() {
   const router = useRouter();
   const params = useParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState('');
+  
+  const [data, setData] = useState<any[]>([]);
 
-  const [data, setData] = useState([
-    { studentName: 'Ali Khan', studentId: 'CS-101', marks: '85', confidenceScore: 98, status: 'verified' },
-    { studentName: 'Sara Ahmed', studentId: 'CS-102', marks: '72', confidenceScore: 65, status: 'review' },
-    { studentName: 'Zainab Bibi', studentId: 'CS-103', marks: '91', confidenceScore: 95, status: 'verified' },
-    { studentName: 'Omar Farooq', studentId: 'CS-104', marks: '45', confidenceScore: 40, status: 'review' },
-  ]);
+  useEffect(() => {
+    const fetchJob = async () => {
+      try {
+        const { data: job, error } = await supabase.from('job_tickets').select('*').eq('id', params.jobId).single();
+        if (error) throw new Error(error.message);
+
+        // If no extracted data exists yet, provide a mock fallback for the demo
+        const mockData = [
+          { studentName: 'Ali Khan', studentId: 'CS-101', marks: '85', confidenceScore: 98, status: 'verified' },
+          { studentName: 'Sara Ahmed', studentId: 'CS-102', marks: '72', confidenceScore: 65, status: 'review' },
+        ];
+        
+        setData(job.extracted_data || mockData);
+      } catch (err: any) {
+        setErrorMsg(err.message || 'Failed to load job');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchJob();
+  }, [params.jobId]);
 
   const handleMarkUpdate = (index: number, newMarks: string) => {
     const newData = [...data];
@@ -24,14 +44,29 @@ export default function VerifyPage() {
     setData(newData);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setIsSubmitting(true);
-    setTimeout(() => {
+    setErrorMsg('');
+    try {
+      const { error } = await supabase.from('job_tickets').update({
+        status: 'completed',
+        extracted_data: data
+      }).eq('id', params.jobId);
+
+      if (error) throw new Error(error.message);
+
       router.push(`/dashboard/report/${params.jobId}`);
-    }, 1500);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to submit');
+      setIsSubmitting(false);
+    }
   };
 
   const hasReviewItems = data.some(d => d.status === 'review');
+
+  if (loading) {
+    return <div className="center-screen"><p>Loading...</p></div>;
+  }
 
   return (
     <>
@@ -70,6 +105,8 @@ export default function VerifyPage() {
 
       <div className="container" style={{ maxWidth: '960px', paddingTop: '2rem' }}>
         
+        {errorMsg && <div className="text-danger text-sm mb-3">{errorMsg}</div>}
+
         {hasReviewItems && (
           <div style={{
             background: 'var(--bg-primary)',

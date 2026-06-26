@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ArrowLeft, UploadCloud, Check } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase_client';
 
 export default function UploadWizard() {
   const [step, setStep] = useState(1);
@@ -10,6 +11,7 @@ export default function UploadWizard() {
   const [course, setCourse] = useState('');
   const [section, setSection] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const router = useRouter();
 
   const assessmentTypes = ['Attendance', 'Quiz', 'Assignment', 'Midterm', 'Final Exam', 'Lab', 'Viva'];
@@ -18,14 +20,32 @@ export default function UploadWizard() {
 
   const handleNext = () => setStep(s => Math.min(s + 1, 4));
 
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
     setIsUploading(true);
+    setErrorMsg('');
     
-    setTimeout(() => {
+    try {
+      const userId = localStorage.getItem('user_id');
+      if (!userId) throw new Error('Not logged in');
+
+      // Create a new job ticket in Supabase
+      const { data, error } = await supabase.from('job_tickets').insert([{
+        user_id: userId,
+        course_id: course,
+        assessment_type: assessmentType,
+        status: 'processing',
+        file_urls: ['uploaded_file_mock.pdf'] // In a real app, upload to storage first
+      }]).select().single();
+
+      if (error) throw new Error(error.message);
+
+      // Navigate to the verification page with the real DB job ID
+      router.push(`/dashboard/verify/${data.id}`);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Upload failed');
       setIsUploading(false);
-      router.push('/dashboard/verify/job-1234');
-    }, 2000);
+    }
   };
 
   return (
@@ -140,6 +160,8 @@ export default function UploadWizard() {
             <p className="text-subtitle mb-4">
               Uploading {assessmentType} for {course} ({section})
             </p>
+            
+            {errorMsg && <div className="text-danger text-sm mb-3">{errorMsg}</div>}
 
             {isUploading ? (
               <div className="panel flex-col flex-center" style={{ padding: '4rem 2rem' }}>

@@ -1,15 +1,49 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight } from 'lucide-react';
+import { supabase } from '@/lib/supabase_client';
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push('/onboarding');
+    setLoading(true);
+    setError('');
+
+    const formData = new FormData(e.target as HTMLFormElement);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    const name = formData.get('name') as string;
+    const university = formData.get('university') as string;
+
+    try {
+      if (isLogin) {
+        const { data, error } = await supabase.from('users').select('*').eq('email', email).single();
+        if (error || !data) throw new Error('Invalid credentials');
+        
+        localStorage.setItem('user_id', data.id);
+        router.push('/dashboard');
+      } else {
+        const { data, error } = await supabase.from('users').insert([{
+          full_name: name,
+          university: university,
+          email: email
+        }]).select().single();
+        
+        if (error) throw new Error(error.message);
+        
+        localStorage.setItem('user_id', data.id);
+        router.push('/onboarding');
+      }
+    } catch (err: any) {
+      setError(err.message || 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -29,17 +63,19 @@ export default function AuthPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ marginTop: '2rem' }}>
+        {error && <div className="text-danger text-sm mb-3">{error}</div>}
+
+        <form onSubmit={handleSubmit}>
           {!isLogin && (
             <>
               <div className="input-group">
                 <label className="input-label">Full Name</label>
-                <input type="text" required className="input-field" placeholder="Dr. Ahmed" />
+                <input type="text" name="name" required className="input-field" placeholder="Dr. Ahmed" />
               </div>
               
               <div className="input-group">
                 <label className="input-label">University</label>
-                <select required className="input-field">
+                <select name="university" required className="input-field">
                   <option value="" disabled>Select your university...</option>
                   <option value="SSUET">Sir Syed University (SSUET)</option>
                   <option value="FAST">FAST NUCES</option>
@@ -51,23 +87,23 @@ export default function AuthPage() {
 
           <div className="input-group">
             <label className="input-label">University Email</label>
-            <input type="email" required className="input-field" placeholder="ahmed@ssuet.edu.pk" />
+            <input type="email" name="email" required className="input-field" placeholder="ahmed@ssuet.edu.pk" />
           </div>
 
           <div className="input-group">
             <label className="input-label">Password</label>
-            <input type="password" required className="input-field" placeholder="••••••••" />
+            <input type="password" name="password" required className="input-field" placeholder="••••••••" />
           </div>
 
-          <button type="submit" className="btn btn-primary w-full mt-2">
-            {isLogin ? 'Sign In' : 'Create Account'}
+          <button type="submit" disabled={loading} className="btn btn-primary w-full mt-2">
+            {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
           </button>
         </form>
 
         <div className="text-center mt-4">
           <button 
             type="button"
-            onClick={() => setIsLogin(!isLogin)} 
+            onClick={() => { setIsLogin(!isLogin); setError(''); }} 
             className="btn btn-ghost text-sm w-full"
           >
             {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}

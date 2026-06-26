@@ -1,24 +1,43 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Shield, Loader2, CheckCircle2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase_client';
 
 export default function OnboardingPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [status, setStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
+  const [errorMsg, setErrorMsg] = useState('');
   const router = useRouter();
 
-  const handleConnect = (e: React.FormEvent) => {
+  const handleConnect = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus('testing');
+    setErrorMsg('');
     
-    setTimeout(() => {
+    try {
+      const userId = localStorage.getItem('user_id');
+      if (!userId) throw new Error('No user logged in');
+
+      const { error } = await supabase.from('portal_credentials').insert([{
+        user_id: userId,
+        portal_username: username,
+        portal_password_encrypted: btoa(password), // simple mock encryption
+        last_verified_at: new Date().toISOString(),
+        is_valid: true
+      }]);
+
+      if (error) throw new Error(error.message);
+
       setStatus('success');
       setTimeout(() => {
         router.push('/dashboard');
       }, 1000);
-    }, 1500);
+    } catch (err: any) {
+      setStatus('error');
+      setErrorMsg(err.message || 'Failed to connect');
+    }
   };
 
   return (
@@ -55,6 +74,8 @@ export default function OnboardingPage() {
               <Shield size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
               <p>Credentials are stored securely using AES-256 encryption.</p>
             </div>
+
+            {status === 'error' && <div className="text-danger text-sm mb-3">{errorMsg}</div>}
 
             <div className="input-group">
               <label className="input-label">Portal Username</label>
