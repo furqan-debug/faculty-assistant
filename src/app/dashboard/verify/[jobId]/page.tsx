@@ -1,9 +1,12 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { ArrowLeft, AlertCircle } from 'lucide-react';
+import { ArrowLeft, AlertCircle, Loader2, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase_client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
 
 export default function VerifyPage() {
   const router = useRouter();
@@ -20,7 +23,6 @@ export default function VerifyPage() {
         const { data: job, error } = await supabase.from('job_tickets').select('*').eq('id', params.jobId).single();
         if (error) throw new Error(error.message);
 
-        // If no extracted data exists yet, provide a mock fallback for the demo
         const mockData = [
           { studentName: 'Ali Khan', studentId: 'CS-101', marks: '85', confidenceScore: 98, status: 'verified' },
           { studentName: 'Sara Ahmed', studentId: 'CS-102', marks: '72', confidenceScore: 65, status: 'review' },
@@ -65,125 +67,115 @@ export default function VerifyPage() {
   const hasReviewItems = data.some(d => d.status === 'review');
 
   if (loading) {
-    return <div className="center-screen"><p>Loading...</p></div>;
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-muted/40">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   return (
-    <>
-      <nav style={{
-        background: 'var(--bg-primary)',
-        borderBottom: '1px solid var(--border-color)',
-        padding: '1rem 2rem',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        position: 'sticky',
-        top: 0,
-        zIndex: 10
-      }}>
-        <div className="flex-center gap-4">
-          <Link href="/dashboard" className="btn-ghost" style={{ padding: '0.25rem' }}>
-            <ArrowLeft size={18} />
-          </Link>
+    <div className="min-h-screen bg-muted/40">
+      <nav className="sticky top-0 z-10 flex items-center justify-between border-b bg-background px-6 py-4">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-muted-foreground">
+            <Link href="/dashboard">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
           <div>
-            <h1 style={{ fontWeight: 500, fontSize: '0.9375rem', color: 'var(--text-primary)' }}>Verify Data</h1>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>ID: {params.jobId}</p>
+            <h1 className="font-semibold text-sm">Verify Data</h1>
+            <p className="text-xs text-muted-foreground">ID: {params.jobId}</p>
           </div>
         </div>
 
-        <div className="flex-center gap-3">
-          <Link href="/dashboard" className="btn btn-ghost">Cancel</Link>
-          <button 
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" asChild>
+            <Link href="/dashboard">Cancel</Link>
+          </Button>
+          <Button 
             onClick={handleSubmit} 
             disabled={isSubmitting || hasReviewItems}
-            className="btn btn-primary"
           >
-            {isSubmitting ? 'Syncing...' : 'Submit to Portal'}
-          </button>
+            {isSubmitting ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Syncing...</>
+            ) : (
+              <><Save className="mr-2 h-4 w-4" /> Submit to Portal</>
+            )}
+          </Button>
         </div>
       </nav>
 
-      <div className="container" style={{ maxWidth: '960px', paddingTop: '2rem' }}>
+      <div className="container max-w-5xl py-8">
         
-        {errorMsg && <div className="text-danger text-sm mb-3">{errorMsg}</div>}
+        {errorMsg && (
+          <div className="mb-6 p-4 rounded-md bg-destructive/15 text-destructive text-sm font-medium">
+            {errorMsg}
+          </div>
+        )}
 
         {hasReviewItems && (
-          <div style={{
-            background: 'var(--bg-primary)',
-            border: '1px solid var(--color-warning)',
-            borderRadius: 'var(--radius-sm)',
-            padding: '1rem 1.25rem',
-            marginBottom: '1.5rem',
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '0.75rem'
-          }}>
-            <AlertCircle size={18} style={{ color: 'var(--color-warning)', marginTop: '2px', flexShrink: 0 }} />
+          <div className="mb-6 flex items-start gap-3 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
             <div>
-              <strong style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>Review Required</strong>
-              <span className="text-subtitle" style={{ marginTop: '0.25rem', display: 'block' }}>
-                Please check the records highlighted below where the AI confidence was low.
-              </span>
+              <h3 className="font-semibold text-amber-800 dark:text-amber-500">Review Required</h3>
+              <p className="text-sm text-amber-700/90 dark:text-amber-500/90 mt-1">
+                Please check the records highlighted below where the AI confidence was low before submitting.
+              </p>
             </div>
           </div>
         )}
 
-        <div className="panel" style={{ padding: 0, overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-color)', background: 'var(--bg-secondary)' }}>
-                <th style={{ padding: '0.75rem 1.25rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Student</th>
-                <th style={{ padding: '0.75rem 1.25rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Roll Number</th>
-                <th style={{ padding: '0.75rem 1.25rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Extracted Marks</th>
-                <th style={{ padding: '0.75rem 1.25rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Confidence</th>
-                <th style={{ padding: '0.75rem 1.25rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((row, index) => (
-                <tr key={index} style={{
-                  borderBottom: '1px solid var(--border-color)',
-                  background: row.status === 'review' ? 'rgba(245, 158, 11, 0.05)' : 'transparent'
-                }}>
-                  <td style={{ padding: '0.75rem 1.25rem', fontWeight: 500 }}>{row.studentName}</td>
-                  <td style={{ padding: '0.75rem 1.25rem', color: 'var(--text-secondary)' }}>{row.studentId}</td>
-                  <td style={{ padding: '0.75rem 1.25rem' }}>
-                    <input 
-                      type="text" 
-                      value={row.marks}
-                      onChange={(e) => handleMarkUpdate(index, e.target.value)}
-                      className="input-field"
-                      style={{ 
-                        padding: '0.375rem 0.5rem', 
-                        width: '70px', 
-                        borderColor: row.status === 'review' ? 'var(--color-warning)' : 'var(--border-color)',
-                      }}
-                    />
-                  </td>
-                  <td style={{ padding: '0.75rem 1.25rem' }}>
-                    <div className="flex-center gap-2" style={{ justifyContent: 'flex-start' }}>
-                      <span style={{ 
-                        fontSize: '0.8125rem', 
-                        color: row.confidenceScore > 85 ? 'var(--color-success)' : 
-                               row.confidenceScore > 50 ? 'var(--color-warning)' : 'var(--color-danger)'
-                      }}>
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="px-6 py-4 font-medium text-muted-foreground">Student Name</th>
+                  <th className="px-6 py-4 font-medium text-muted-foreground">Roll Number</th>
+                  <th className="px-6 py-4 font-medium text-muted-foreground">Extracted Marks</th>
+                  <th className="px-6 py-4 font-medium text-muted-foreground">Confidence</th>
+                  <th className="px-6 py-4 font-medium text-muted-foreground">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {data.map((row, index) => (
+                  <tr key={index} className={row.status === 'review' ? 'bg-amber-500/5 hover:bg-amber-500/10' : 'hover:bg-muted/50 transition-colors'}>
+                    <td className="px-6 py-4 font-medium">{row.studentName}</td>
+                    <td className="px-6 py-4 text-muted-foreground">{row.studentId}</td>
+                    <td className="px-6 py-4">
+                      <Input 
+                        value={row.marks}
+                        onChange={(e) => handleMarkUpdate(index, e.target.value)}
+                        className={row.status === 'review' ? 'border-amber-500 ring-amber-500 w-24' : 'w-24'}
+                      />
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={
+                        row.confidenceScore > 85 ? 'text-emerald-500 font-medium' : 
+                        row.confidenceScore > 50 ? 'text-amber-500 font-medium' : 'text-destructive font-medium'
+                      }>
                         {row.confidenceScore}%
                       </span>
-                    </div>
-                  </td>
-                  <td style={{ padding: '0.75rem 1.25rem' }}>
-                    {row.status === 'review' ? (
-                      <span className="badge badge-warning">Review</span>
-                    ) : (
-                      <span className="badge badge-success">Verified</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {row.status === 'review' ? (
+                        <span className="inline-flex items-center rounded-full border border-transparent bg-amber-500/15 px-2.5 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                          Review
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full border border-transparent bg-emerald-500/15 px-2.5 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                          Verified
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       </div>
-    </>
+    </div>
   );
 }

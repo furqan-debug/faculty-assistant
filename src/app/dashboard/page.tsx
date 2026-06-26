@@ -1,9 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, Clock, Settings, LogOut } from 'lucide-react';
+import { Plus, Clock, Settings, LogOut, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase_client';
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function DashboardPage() {
   const [recentUploads, setRecentUploads] = useState<any[]>([]);
@@ -34,122 +36,113 @@ export default function DashboardPage() {
   }, [router]);
 
   return (
-    <>
-      <nav style={{
-        background: 'var(--bg-primary)',
-        borderBottom: '1px solid var(--border-color)',
-        padding: '1rem 2rem',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        position: 'sticky',
-        top: 0,
-        zIndex: 10
-      }}>
-        <div className="flex-center gap-2">
-          <div style={{ width: '16px', height: '16px', backgroundColor: 'var(--text-primary)', borderRadius: '2px' }}></div>
-          <span style={{ fontWeight: 600, fontSize: '0.9375rem' }}>EduSmartz</span>
+    <div className="min-h-screen bg-muted/40">
+      <nav className="sticky top-0 z-10 flex items-center justify-between border-b bg-background px-6 py-4">
+        <div className="flex items-center gap-2">
+          <div className="flex h-6 w-6 items-center justify-center rounded bg-primary">
+            <span className="text-primary-foreground font-bold text-xs">E</span>
+          </div>
+          <span className="font-semibold text-sm">EduSmartz</span>
         </div>
-        <div className="flex-center gap-4">
-          <span className="text-sm text-secondary">Dashboard</span>
-          <div className="divider" style={{ width: '1px', height: '24px' }}></div>
-          <button className="btn-ghost" style={{ padding: '0.25rem' }}><Settings size={18} /></button>
-          <Link href="/auth" onClick={() => localStorage.removeItem('user_id')} className="btn-ghost" style={{ padding: '0.25rem' }}><LogOut size={18} /></Link>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-muted-foreground font-medium">Dashboard</span>
+          <div className="h-5 w-px bg-border"></div>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+            <Settings className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 text-muted-foreground"
+            onClick={() => { localStorage.removeItem('user_id'); router.push('/auth'); }}
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
         </div>
       </nav>
 
-      <div className="container" style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '3rem', paddingTop: '3rem' }}>
-        
-        {/* Sidebar area */}
-        <aside style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      <div className="container max-w-6xl py-8">
+        <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-8">
           
-          <div>
-            <Link 
-              href="/dashboard/upload" 
-              className="btn btn-primary w-full"
-              style={{ padding: '0.75rem', justifyContent: 'center' }}
-            >
-              <Plus size={16} /> New Upload
-            </Link>
-          </div>
+          <aside className="space-y-6">
+            <Button asChild className="w-full justify-start font-medium h-10">
+              <Link href="/dashboard/upload">
+                <Plus className="mr-2 h-4 w-4" /> New Upload
+              </Link>
+            </Button>
 
-          <div>
-            <h3 className="text-xs mb-2">Your Courses</h3>
-            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-              {courses.map((course, i) => (
-                <li key={i} style={{
-                  fontSize: '0.875rem', 
-                  color: 'var(--text-primary)',
-                  padding: '0.5rem 0.75rem',
-                  borderRadius: 'var(--radius-sm)',
-                  background: 'var(--bg-primary)',
-                  border: '1px solid var(--border-color)'
-                }}>
-                  {course}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-        </aside>
-
-        {/* Main Content */}
-        <main>
-          <div className="flex-between mb-4">
-            <h1 className="heading-1" style={{ fontSize: '1.25rem', margin: 0 }}>Recent Uploads</h1>
-          </div>
-          
-          <div className="panel" style={{ padding: 0 }}>
-            {loading ? (
-              <div className="flex-col flex-center" style={{ padding: '4rem 2rem', color: 'var(--text-tertiary)' }}>
-                <p className="text-sm">Loading...</p>
-              </div>
-            ) : recentUploads.length === 0 ? (
-              <div className="flex-col flex-center" style={{ padding: '4rem 2rem', color: 'var(--text-tertiary)' }}>
-                <Clock size={32} style={{ marginBottom: '1rem' }} />
-                <p className="text-sm">No activity yet.</p>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {recentUploads.map((job, idx) => (
-                  <div key={job.id} style={{
-                    padding: '1rem 1.5rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    borderBottom: idx === recentUploads.length - 1 ? 'none' : '1px solid var(--border-color)',
-                  }}>
-                    <div className="flex-center gap-3">
-                      <div style={{
-                        width: '8px', height: '8px', borderRadius: '50%',
-                        background: job.status === 'completed' ? 'var(--color-success)' : 
-                                    job.status === 'processing' ? 'var(--color-warning)' : 'var(--color-danger)'
-                      }}></div>
-                      <div>
-                        <p style={{ fontWeight: 500, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
-                          {job.course_id} — {job.assessment_type}
-                        </p>
-                        <p className="text-subtitle" style={{ fontSize: '0.8125rem', marginTop: '0.125rem' }}>
-                          {new Date(job.created_at).toLocaleString()} • {job.extracted_data?.length || 0} Students
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <Link 
-                      href={job.status === 'processing' ? `/dashboard/verify/${job.id}` : `/dashboard/report/${job.id}`} 
-                      className="btn btn-secondary text-xs"
-                      style={{ padding: '0.375rem 0.75rem' }}
-                    >
-                      {job.status === 'processing' ? 'Verify' : 'View Report'}
-                    </Link>
-                  </div>
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Your Courses</h3>
+              <ul className="space-y-1">
+                {courses.map((course, i) => (
+                  <li key={i}>
+                    <Button variant="ghost" className="w-full justify-start text-sm font-normal h-9">
+                      {course}
+                    </Button>
+                  </li>
                 ))}
-              </div>
-            )}
-          </div>
-        </main>
+              </ul>
+            </div>
+          </aside>
 
+          <main className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold tracking-tight">Recent Uploads</h1>
+            </div>
+            
+            <Card>
+              <CardContent className="p-0">
+                {loading ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                    <Loader2 className="h-8 w-8 animate-spin mb-4" />
+                    <p className="text-sm font-medium">Loading your uploads...</p>
+                  </div>
+                ) : recentUploads.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                    <Clock className="h-8 w-8 mb-4 text-muted-foreground/50" />
+                    <p className="text-sm font-medium">No activity yet.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y">
+                    {recentUploads.map((job) => (
+                      <div key={job.id} className="flex items-center justify-between p-6 hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center gap-4">
+                          {job.status === 'completed' ? (
+                            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                          ) : job.status === 'processing' ? (
+                            <div className="h-5 w-5 rounded-full border-2 border-amber-500 border-t-transparent animate-spin" />
+                          ) : (
+                            <XCircle className="h-5 w-5 text-destructive" />
+                          )}
+                          <div>
+                            <p className="font-semibold text-sm">
+                              {job.course_id} — {job.assessment_type}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1 font-medium">
+                              {new Date(job.created_at).toLocaleString()} • {job.extracted_data?.length || 0} Students
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <Button 
+                          variant="secondary" 
+                          size="sm" 
+                          asChild
+                        >
+                          <Link href={job.status === 'processing' ? `/dashboard/verify/${job.id}` : `/dashboard/report/${job.id}`}>
+                            {job.status === 'processing' ? 'Verify Data' : 'View Report'}
+                          </Link>
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </main>
+
+        </div>
       </div>
-    </>
+    </div>
   );
 }

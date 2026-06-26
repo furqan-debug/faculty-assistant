@@ -1,9 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle2, Download, Check, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Download, Loader2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase_client';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function ReportPage() {
   const params = useParams();
@@ -20,92 +22,92 @@ export default function ReportPage() {
   }, [params.jobId]);
 
   if (loading) {
-    return <div className="center-screen"><p>Loading report...</p></div>;
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-muted/40">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   if (!job) {
-    return <div className="center-screen"><p>Report not found.</p></div>;
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-muted/40">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Report not found</h2>
+          <Button asChild variant="outline"><Link href="/dashboard">Return to Dashboard</Link></Button>
+        </div>
+      </div>
+    );
   }
 
   const studentsCount = job.extracted_data ? job.extracted_data.length : 0;
 
   return (
-    <>
-      <nav style={{
-        background: 'var(--bg-primary)',
-        borderBottom: '1px solid var(--border-color)',
-        padding: '1rem 2rem',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        position: 'sticky',
-        top: 0,
-        zIndex: 10
-      }}>
-        <div className="flex-center gap-4">
-          <Link href="/dashboard" className="btn-ghost" style={{ padding: '0.25rem' }}>
-            <ArrowLeft size={18} />
+    <div className="min-h-screen bg-muted/40">
+      <nav className="sticky top-0 z-10 flex items-center gap-4 border-b bg-background px-6 py-4">
+        <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-muted-foreground">
+          <Link href="/dashboard">
+            <ArrowLeft className="h-4 w-4" />
           </Link>
-          <span style={{ fontWeight: 500, fontSize: '0.9375rem', color: 'var(--text-primary)' }}>Report</span>
-        </div>
+        </Button>
+        <span className="font-semibold text-sm">Submission Report</span>
       </nav>
 
-      <div className="container" style={{ maxWidth: '640px', paddingTop: '4rem' }}>
+      <div className="container max-w-2xl py-12">
         
-        <div style={{ marginBottom: '3rem' }}>
-          <div className="flex-center gap-3 mb-2" style={{ justifyContent: 'flex-start' }}>
-            <CheckCircle2 size={24} style={{ color: 'var(--color-success)' }} />
-            <h1 className="heading-1" style={{ margin: 0 }}>Submission Complete</h1>
+        <div className="mb-10 text-center">
+          <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 mb-4">
+            <CheckCircle2 className="h-8 w-8 text-emerald-500" />
           </div>
-          <p className="text-subtitle">Data for {job.assessment_type} has been successfully synced to the portal.</p>
+          <h1 className="text-3xl font-bold tracking-tight mb-2">Submission Complete</h1>
+          <p className="text-muted-foreground text-lg">
+            Data for {job.assessment_type} has been successfully synced to the portal.
+          </p>
         </div>
 
-        <div className="panel" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-            <div>
-              <p className="text-xs mb-1">Course</p>
-              <p style={{ fontWeight: 500 }}>{job.course_id}</p>
+        <Card>
+          <CardHeader className="border-b bg-muted/20">
+            <CardTitle className="text-lg">Job Details</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-2 gap-8 mb-8">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Course</p>
+                <p className="font-semibold text-lg">{job.course_id}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Date</p>
+                <p className="font-semibold text-lg">{new Date(job.created_at).toLocaleDateString()}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs mb-1">Date</p>
-              <p style={{ fontWeight: 500 }}>{new Date(job.created_at).toLocaleDateString()}</p>
-            </div>
-          </div>
 
-          <div className="divider"></div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div className="flex-between">
-              <span className="text-sm text-secondary">Total Processed</span>
-              <span style={{ fontWeight: 500 }}>{studentsCount}</span>
+            <div className="space-y-4 pt-6 border-t">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground">Total Processed</span>
+                <span className="font-semibold">{studentsCount}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Successful</span>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">{studentsCount}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-destructive">Failed</span>
+                <span className="font-semibold text-destructive">0</span>
+              </div>
             </div>
-            <div className="flex-between">
-              <span className="text-sm text-secondary flex-center gap-2">
-                <Check size={14} className="text-success" /> Successful
-              </span>
-              <span style={{ fontWeight: 500 }}>{studentsCount}</span>
-            </div>
-            <div className="flex-between">
-              <span className="text-sm text-secondary flex-center gap-2">
-                <X size={14} className="text-danger" /> Failed
-              </span>
-              <span style={{ fontWeight: 500 }}>0</span>
-            </div>
-          </div>
+          </CardContent>
+        </Card>
 
-        </div>
-
-        <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
-          <Link href="/dashboard" className="btn btn-primary" style={{ flex: 1 }}>
-            Return to Dashboard
-          </Link>
-          <button className="btn btn-secondary">
-            <Download size={16} /> JSON
-          </button>
+        <div className="flex gap-4 mt-8">
+          <Button asChild className="flex-1" size="lg">
+            <Link href="/dashboard">Return to Dashboard</Link>
+          </Button>
+          <Button variant="outline" size="lg">
+            <Download className="mr-2 h-4 w-4" /> Download JSON
+          </Button>
         </div>
 
       </div>
-    </>
+    </div>
   );
 }

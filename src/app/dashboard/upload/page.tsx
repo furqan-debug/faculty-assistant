@@ -1,9 +1,12 @@
 'use client';
 import { useState } from 'react';
-import { ArrowLeft, UploadCloud, Check } from 'lucide-react';
+import { ArrowLeft, UploadCloud, Check, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase_client';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 export default function UploadWizard() {
   const [step, setStep] = useState(1);
@@ -29,18 +32,16 @@ export default function UploadWizard() {
       const userId = localStorage.getItem('user_id');
       if (!userId) throw new Error('Not logged in');
 
-      // Create a new job ticket in Supabase
       const { data, error } = await supabase.from('job_tickets').insert([{
         user_id: userId,
         course_id: course,
         assessment_type: assessmentType,
         status: 'processing',
-        file_urls: ['uploaded_file_mock.pdf'] // In a real app, upload to storage first
+        file_urls: ['uploaded_file_mock.pdf']
       }]).select().single();
 
       if (error) throw new Error(error.message);
 
-      // Navigate to the verification page with the real DB job ID
       router.push(`/dashboard/verify/${data.id}`);
     } catch (err: any) {
       setErrorMsg(err.message || 'Upload failed');
@@ -49,149 +50,141 @@ export default function UploadWizard() {
   };
 
   return (
-    <>
-      <nav style={{
-        background: 'var(--bg-primary)',
-        borderBottom: '1px solid var(--border-color)',
-        padding: '1rem 2rem',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '2rem',
-        position: 'sticky',
-        top: 0,
-        zIndex: 10
-      }}>
-        <Link href="/dashboard" className="btn-ghost" style={{ padding: '0.25rem' }}>
-          <ArrowLeft size={18} />
-        </Link>
-        <span style={{ fontWeight: 500, fontSize: '0.9375rem' }}>New Upload</span>
+    <div className="min-h-screen bg-muted/40">
+      <nav className="sticky top-0 z-10 flex items-center gap-4 border-b bg-background px-6 py-4">
+        <Button variant="ghost" size="icon" asChild className="h-8 w-8 text-muted-foreground">
+          <Link href="/dashboard">
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+        </Button>
+        <span className="font-semibold text-sm">New Upload</span>
         
-        <div style={{ flex: 1 }}></div>
+        <div className="flex-1"></div>
 
-        <div className="flex-center gap-2 text-xs" style={{ color: 'var(--text-tertiary)' }}>
-          <span style={{ color: step >= 1 ? 'var(--text-primary)' : '' }}>Type</span>
+        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+          <span className={cn(step >= 1 && "text-foreground")}>Type</span>
           <span>/</span>
-          <span style={{ color: step >= 2 ? 'var(--text-primary)' : '' }}>Course</span>
+          <span className={cn(step >= 2 && "text-foreground")}>Course</span>
           <span>/</span>
-          <span style={{ color: step >= 3 ? 'var(--text-primary)' : '' }}>Section</span>
+          <span className={cn(step >= 3 && "text-foreground")}>Section</span>
           <span>/</span>
-          <span style={{ color: step >= 4 ? 'var(--text-primary)' : '' }}>Upload</span>
+          <span className={cn(step >= 4 && "text-foreground")}>Upload</span>
         </div>
       </nav>
 
-      <div className="container" style={{ maxWidth: '640px', paddingTop: '4rem' }}>
+      <div className="container max-w-2xl py-12">
           
         {step === 1 && (
-          <div>
-            <h1 className="heading-1 mb-1">Assessment Type</h1>
-            <p className="text-subtitle mb-4">Select the type of document you are uploading.</p>
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <h1 className="text-3xl font-bold tracking-tight mb-2">Assessment Type</h1>
+            <p className="text-muted-foreground mb-8 text-lg">Select the type of document you are uploading.</p>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div className="grid grid-cols-2 gap-3">
               {assessmentTypes.map(type => (
-                <button 
+                <Card 
                   key={type}
                   onClick={() => { setAssessmentType(type); handleNext(); }}
-                  className="card"
-                  style={{
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    borderColor: assessmentType === type ? 'var(--text-primary)' : 'var(--border-color)',
-                    background: 'var(--bg-primary)'
-                  }}
+                  className={cn(
+                    "cursor-pointer hover:border-primary transition-colors",
+                    assessmentType === type && "border-primary ring-1 ring-primary"
+                  )}
                 >
-                  <span style={{ fontWeight: 500, fontSize: '0.875rem' }}>{type}</span>
-                </button>
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <span className="font-medium text-sm">{type}</span>
+                    {assessmentType === type && <Check className="h-4 w-4 text-primary" />}
+                  </CardContent>
+                </Card>
               ))}
             </div>
           </div>
         )}
 
         {step === 2 && (
-          <div>
-            <h1 className="heading-1 mb-1">Select Course</h1>
-            <p className="text-subtitle mb-4">Which course does this {assessmentType.toLowerCase()} belong to?</p>
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <h1 className="text-3xl font-bold tracking-tight mb-2">Select Course</h1>
+            <p className="text-muted-foreground mb-8 text-lg">Which course does this {assessmentType.toLowerCase()} belong to?</p>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div className="space-y-3">
               {courses.map(c => (
-                <button 
+                <Card 
                   key={c}
                   onClick={() => { setCourse(c); handleNext(); }}
-                  className="card flex-between"
-                  style={{
-                    cursor: 'pointer',
-                    borderColor: course === c ? 'var(--text-primary)' : 'var(--border-color)',
-                  }}
+                  className={cn(
+                    "cursor-pointer hover:border-primary transition-colors",
+                    course === c && "border-primary ring-1 ring-primary"
+                  )}
                 >
-                  <span style={{ fontWeight: 500, fontSize: '0.875rem' }}>{c}</span>
-                  {course === c && <Check size={16} />}
-                </button>
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <span className="font-medium text-sm">{c}</span>
+                    {course === c && <Check className="h-4 w-4 text-primary" />}
+                  </CardContent>
+                </Card>
               ))}
             </div>
           </div>
         )}
 
         {step === 3 && (
-          <div>
-            <h1 className="heading-1 mb-1">Select Section</h1>
-            <p className="text-subtitle mb-4">Which section of {course}?</p>
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <h1 className="text-3xl font-bold tracking-tight mb-2">Select Section</h1>
+            <p className="text-muted-foreground mb-8 text-lg">Which section of {course}?</p>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div className="space-y-3">
               {sections.map(s => (
-                <button 
+                <Card 
                   key={s}
                   onClick={() => { setSection(s); handleNext(); }}
-                  className="card flex-between"
-                  style={{
-                    cursor: 'pointer',
-                    borderColor: section === s ? 'var(--text-primary)' : 'var(--border-color)',
-                  }}
+                  className={cn(
+                    "cursor-pointer hover:border-primary transition-colors",
+                    section === s && "border-primary ring-1 ring-primary"
+                  )}
                 >
-                  <span style={{ fontWeight: 500, fontSize: '0.875rem' }}>{s}</span>
-                  {section === s && <Check size={16} />}
-                </button>
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <span className="font-medium text-sm">{s}</span>
+                    {section === s && <Check className="h-4 w-4 text-primary" />}
+                  </CardContent>
+                </Card>
               ))}
             </div>
           </div>
         )}
 
         {step === 4 && (
-          <div>
-            <h1 className="heading-1 mb-1">Upload Documents</h1>
-            <p className="text-subtitle mb-4">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <h1 className="text-3xl font-bold tracking-tight mb-2">Upload Documents</h1>
+            <p className="text-muted-foreground mb-8 text-lg">
               Uploading {assessmentType} for {course} ({section})
             </p>
             
-            {errorMsg && <div className="text-danger text-sm mb-3">{errorMsg}</div>}
+            {errorMsg && (
+              <div className="mb-4 p-4 rounded-md bg-destructive/15 text-destructive text-sm font-medium">
+                {errorMsg}
+              </div>
+            )}
 
             {isUploading ? (
-              <div className="panel flex-col flex-center" style={{ padding: '4rem 2rem' }}>
-                <div className="spinner" style={{
-                  width: '24px', height: '24px',
-                  border: '2px solid var(--border-color)',
-                  borderTopColor: 'var(--text-primary)',
-                  borderRadius: '50%',
-                  marginBottom: '1rem'
-                }}></div>
-                <h3 className="heading-2 mb-1">Processing Documents</h3>
-                <p className="text-subtitle">Extracting marks and calculating confidence...</p>
-              </div>
+              <Card className="border-dashed border-2">
+                <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                  <h3 className="text-lg font-semibold mb-1">Processing Documents</h3>
+                  <p className="text-sm text-muted-foreground">Extracting marks and calculating confidence...</p>
+                </CardContent>
+              </Card>
             ) : (
-              <label className="panel" style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                padding: '4rem 2rem',
-                borderStyle: 'dashed',
-                cursor: 'pointer',
-                transition: 'border-color var(--transition-fast)'
-              }}>
-                <UploadCloud size={24} style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }} />
-                <h3 style={{ fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' }}>Click or drag files</h3>
-                <p className="text-subtitle">PDF, PNG, or JPEG</p>
-                <input type="file" multiple accept="image/*,.pdf" style={{ display: 'none' }} onChange={handleUpload} />
+              <label className="cursor-pointer block">
+                <Card className="border-dashed border-2 hover:bg-muted/50 transition-colors">
+                  <CardContent className="flex flex-col items-center justify-center py-20 text-center">
+                    <UploadCloud className="h-10 w-10 text-muted-foreground mb-4" />
+                    <h3 className="text-base font-semibold mb-1">Click or drag files</h3>
+                    <p className="text-sm text-muted-foreground">PDF, PNG, or JPEG</p>
+                    <input type="file" multiple accept="image/*,.pdf" className="hidden" onChange={handleUpload} />
+                  </CardContent>
+                </Card>
               </label>
             )}
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }

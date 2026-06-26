@@ -2,6 +2,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase_client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -47,70 +51,70 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="center-screen">
-      <div className="panel" style={{ width: '100%', maxWidth: '400px' }}>
-        
-        <div className="mb-4">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
-            <div style={{ width: '24px', height: '24px', backgroundColor: 'var(--text-primary)', borderRadius: '4px' }}></div>
-            <span style={{ fontWeight: 600, fontSize: '1.125rem' }}>EduSmartz</span>
+    <div className="flex items-center justify-center min-h-screen bg-muted/40 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-2 text-center">
+          <div className="flex justify-center mb-2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
+              <span className="text-primary-foreground font-bold text-xl">E</span>
+            </div>
           </div>
-          <h1 className="heading-1">
-            {isLogin ? 'Sign in to your account' : 'Create an account'}
-          </h1>
-          <p className="text-subtitle">
-            {isLogin ? 'Enter your credentials to access the dashboard.' : 'Enter your details to get started.'}
-          </p>
-        </div>
-
-        {error && <div className="text-danger text-sm mb-3">{error}</div>}
-
-        <form onSubmit={handleSubmit}>
-          {!isLogin && (
-            <>
-              <div className="input-group">
-                <label className="input-label">Full Name</label>
-                <input type="text" name="name" required className="input-field" placeholder="Dr. Ahmed" />
+          <CardTitle className="text-2xl font-bold tracking-tight">
+            {isLogin ? 'Welcome back' : 'Create an account'}
+          </CardTitle>
+          <CardDescription>
+            {isLogin ? 'Enter your email to sign in to your account' : 'Enter your details below to create your account'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="p-3 rounded-md bg-destructive/15 text-destructive text-sm font-medium">
+                {error}
               </div>
-              
-              <div className="input-group">
-                <label className="input-label">University</label>
-                <select name="university" required className="input-field">
-                  <option value="" disabled>Select your university...</option>
-                  <option value="SSUET">Sir Syed University (SSUET)</option>
-                  <option value="FAST">FAST NUCES</option>
-                  <option value="NED">NED University</option>
-                </select>
+            )}
+            
+            {!isLogin && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input id="name" name="name" required placeholder="Dr. Ahmed" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="university">University</Label>
+                  <Input id="university" name="university" required placeholder="Sir Syed University (SSUET)" />
+                </div>
+              </>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" name="email" type="email" required placeholder="ahmed@ssuet.edu.pk" />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                {isLogin && <a href="#" className="text-sm font-medium text-primary underline-offset-4 hover:underline">Forgot password?</a>}
               </div>
-            </>
-          )}
+              <Input id="password" name="password" type="password" required />
+            </div>
 
-          <div className="input-group">
-            <label className="input-label">University Email</label>
-            <input type="email" name="email" required className="input-field" placeholder="ahmed@ssuet.edu.pk" />
-          </div>
-
-          <div className="input-group">
-            <label className="input-label">Password</label>
-            <input type="password" name="password" required className="input-field" placeholder="••••••••" />
-          </div>
-
-          <button type="submit" disabled={loading} className="btn btn-primary w-full mt-2">
-            {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
-          </button>
-        </form>
-
-        <div className="text-center mt-4">
-          <button 
-            type="button"
-            onClick={() => { setIsLogin(!isLogin); setError(''); }} 
-            className="btn btn-ghost text-sm w-full"
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter>
+          <Button 
+            variant="ghost" 
+            className="w-full" 
+            onClick={() => { setIsLogin(!isLogin); setError(''); }}
           >
             {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-          </button>
-        </div>
-        
-      </div>
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
   );
 }
